@@ -1,13 +1,12 @@
 import math
 
 
-def thetaW(n, rac):
+def thetaW(n, s):
     """ Calculate's Waterson's 1975 estimator of theta 
     Takes n the sample number and rac, a list of reference allele 
     counts at each segregating site. For a fasta file one of the alleles
     at a biallelic site is chosen as the ref"""
 
-    s = len(rac)
     
     if s == 0:
         tw = 0.0
