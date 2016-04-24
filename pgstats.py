@@ -1,6 +1,12 @@
 import math
 
 
+def calc_rac(snp):
+    rac_num = (snp.num_hom_ref * 2) + snp.num_het
+
+    return rac_num
+
+
 def thetaW(n, s):
     """ Calculate's Waterson's 1975 estimator of theta 
     Takes n the sample number and rac, a list of reference allele 
@@ -65,28 +71,29 @@ def sfs(rac, n):
     pass
 
 
-def piB(rac_1, rac_2, n1, n2):
-    """Calculates the pi between (piB) populations 1 and 2 (aka Dxy) in a window
+def pib(rac_1, rac_2, n1, n2):
+    """Calculates the pi between (pib) populations 1 and 2 (aka Dxy) in a window
     by calculating piB at each site where the reference allele frequency in pop1 is p1 
     and pop2 p2, using the equation p1*(1 - p2) + p2*(1 - p1)."""
     
     if sum(rac_1) + sum(rac_2) == 0:
-        piB = 0.0
+        pi_b = 0.0
     else:        
-        piB = 0.0
+        pi_b = 0.0
         for s in xrange(len(rac_1)):
             p1 = rac_1[s] / float(n1)
             p2 = rac_2[s] / float(n2)
-            piB +=  p1 * (1 - p2) + p2 * (1 - p1)
+            pi_b += p1 * (1 - p2) + p2 * (1 - p1)
                 
-    return piB
+    return pi_b
             
 
-def fst(piB, rac_1, rac_2, n1, n2):
+def fst(pi_b, rac_1, rac_2, n1, n2):
     """ Calculates the Hudson et al. (1992) unweighted version of Fst
         Fst = (piB - piS) / piS"""
     
     ##TODO add weithted Fst
+
     if sum(rac_1) + sum(rac_2) == 0:
         Fst = 0.0
     else:
@@ -97,7 +104,7 @@ def fst(piB, rac_1, rac_2, n1, n2):
         
             piS = p1*(1-p1) + p2*(1-p2)
     
-            Fst = (piB - piS) / piS
+            Fst = (pi_b - piS) / piS
 
     return Fst
 
