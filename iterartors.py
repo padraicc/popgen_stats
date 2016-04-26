@@ -35,6 +35,10 @@ def vcf_site_iterator(vcf, min_dp, max_dp, filtered):
             # indels += 1
             continue
 
+        if site.is_indel and site.aaf == 0.0:
+            valid_sites += 1
+            continue
+
         if len(site.ALT) >= 1 and site.ALT[-1] == '*':  # SNPs at spanning deletion
             # spanning_deletion += 1
             continue
@@ -55,9 +59,10 @@ def vcf_site_iterator(vcf, min_dp, max_dp, filtered):
             # low_call_rate += 1
             continue
 
-        if site.FILTER == "REPEAT" or "REPEAT" in site.FILTER:  # exclude sites in repeat regions
-            # repeat_sites += 1
-            continue
+        if site.FILTER is not None:
+            if site.FILTER == "REPEAT" or "REPEAT" in site.FILTER:  # exclude sites in repeat regions
+                # repeat_sites += 1
+                continue
 
         if site.is_monomorphic:
             valid_sites += 1
@@ -73,7 +78,7 @@ def vcf_site_iterator(vcf, min_dp, max_dp, filtered):
                 valid_sites += 1
                 # if site.aaf == 1.0:
                 #     snp_not_S += 1 # A SNP different from reference, but not segregating in the samples
-                # continue
+                continue
 
             if filtered:
                 if site.FILTER == 'PASS':
