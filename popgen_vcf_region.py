@@ -1,11 +1,11 @@
 from __future__ import print_function
 import os
-import sys
+# import sys
 import argparse
 import cyvcf
 import pgstats as pg
-import numpy as np
-import datetime
+# import numpy as np
+# import datetime
 from iterartors import vcf_site_iterator
 
 
@@ -36,7 +36,7 @@ min_dp = 1
 if args.min_dp:
     min_dp = args.min_dp
 
-max_dp = None
+max_dp = float('inf')
 if args.max_dp:
     max_dp = args.max_dp
 
