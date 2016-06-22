@@ -41,6 +41,29 @@ def pi(n, rac):
     return pi
 
 
+def pi_sfs(sfs):
+
+    """Calculate pi using the folded sfs
+
+    sfs is a list containing the minor allele counts
+    """
+
+    s = sum(sfs)
+    n = len(sfs) * 2
+    if s == 0:
+        pi = 0
+    else:
+        pi = 0.0
+        i = 1
+        for Si in sfs:
+            pi += Si * i * (n - i)
+            i += 1
+
+    pi = (2 / float(n * (n - 1))) * pi
+
+    return pi
+
+
 def TajimasD(n, s, tw, pi):
     
     if s == 0:
@@ -64,6 +87,26 @@ def TajimasD(n, s, tw, pi):
         D = rawD / math.sqrt(V)
     
     return D
+
+
+def calc_delta_pi(S, pi, n):
+
+    """
+    Calculation of delta_pi from Langley et al. (2014) PLoS Genet 10(7): e1004457.
+
+    :param pol_stats: Dictionary containing polymorphism stats needed to calculate delta_pi
+    :param n: Sample size
+    :return: float
+
+    """
+
+    if S > 0:
+        assert isinstance(S, int)
+        delta_pi = (pi / float(S)) - (1 / sum(1.0 / i for i in range(1, n)))
+    else:
+        delta_pi = 'NA'
+
+    return delta_pi
 
 
 def sfs(rac, n):
