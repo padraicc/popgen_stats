@@ -32,9 +32,9 @@ parser = argparse.ArgumentParser(description="Program to calculate population ge
 parser.add_argument('-i', '--vcf', required=True, dest='vcf_infile',
                     help="VCF input file containing biallelic SNPs (Needs to be filtered)")
 parser.add_argument('-o', '--out', required=True, dest='outfile', help="Outfile to write results")
-parser.add_argument('-p', '--ploidy', required=True, type=int, dest='ploidy', help="Ploidy of sample. 1 for haploid and "
-                                                                                   "2 for diploid")
-parser.add_argument('-f', '--callable', required=False, dest='callable', help="Callable sites in a fasta fomrmat. "
+parser.add_argument('-p', '--ploidy', required=True, type=int, dest='ploidy',
+                    help="Ploidy of samples. 1 for haploid and 2 for diploid")
+parser.add_argument('-f', '--callable', required=False, dest='callable', help="Callable sites in a fasta format. "
                                                                             "Callable is 0 and not-callable is 1")
 parser.add_argument('-e', '--exclude', required=False, dest='exclude', help="File listing chromosome/Scaffolds to "
                                                                             "exclude")
