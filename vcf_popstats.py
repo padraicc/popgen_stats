@@ -13,16 +13,16 @@ def calc_stats(ac_list, chrom, callable_file, out):
     chrom_length = len(seq)
     callable_sites = seq.count('0')
 
-    S = len(ac_list)
-    theta_w = pg.thetaW(n, S)
+    segs = len(ac_list)
+    theta_w = pg.thetaW(n, segs)
     theta_w_site = round(theta_w / callable_sites, 5)
 
     pi = pg.pi_tajima(n, ac_list)
     pi_site = round(pi / callable_sites, 5)
 
-    tajd = round(pg.TajimasD(n, S, theta_w, pi), 5)
+    tajd = round(pg.TajimasD(n, segs, theta_w, pi), 5)
 
-    print(chrom, chrom_length, callable_sites, S, theta_w_site, pi_site, tajd, sep='\t', file=out)
+    print(chrom, chrom_length, callable_sites, segs, theta_w_site, pi_site, tajd, sep='\t', file=out)
 
     return chrom_length, callable_sites
 
@@ -32,8 +32,8 @@ parser = argparse.ArgumentParser(description="Program to calculate population ge
 parser.add_argument('-i', '--vcf', required=True, dest='vcf_infile',
                     help="VCF input file containing biallelic SNPs (Needs to be filtered)")
 parser.add_argument('-o', '--out', required=True, dest='outfile', help="Outfile to write results")
-parser.add_argument('-p', '--ploidy', required=True, type=int, dest='ploidy', help="Ploidy of sample. 1 for haploid and 2 for "
-                                                                          "diploid")
+parser.add_argument('-p', '--ploidy', required=True, type=int, dest='ploidy', help="Ploidy of sample. 1 for haploid and "
+                                                                                   "2 for diploid")
 parser.add_argument('-f', '--callable', required=False, dest='callable', help="Callable sites in a fasta fomrmat. "
                                                                             "Callable is 0 and not-callable is 1")
 parser.add_argument('-e', '--exclude', required=False, dest='exclude', help="File listing chromosome/Scaffolds to "
@@ -49,7 +49,6 @@ vcf_infile = VariantFile(args.vcf_infile)
 sample_num = len(vcf_infile.header.samples)
 
 contigs = set(vcf_infile.header.contigs)
-
 
 if args.ploidy == 2:
     n = 2 * sample_num
@@ -69,8 +68,6 @@ chrom_list = []
 total_ac = []
 total_sites = 0
 total_callable = 0
-site_num = 0
-
 
 with open(args.outfile, 'w') as outfile:
     print('Chromosome', 'Chromosome_length', 'Sites', 'S', 'thetaW', 'pi', 'tajd', sep='\t', file=outfile)
