@@ -1,12 +1,6 @@
 import math
 
 
-# def calc_rac(snp):
-#     rac_num = (snp.num_hom_ref * 2) + snp.num_het
-#
-#     return rac_num
-
-
 def thetaW(n, s):
     """ Calculate's Waterson's 1975 estimator of theta 
     Takes n the sample number and rac, a list of reference allele 
@@ -99,7 +93,8 @@ def calc_delta_pi(S, pi, n):
     """
     Calculation of delta_pi from Langley et al. (2014) PLoS Genet 10(7): e1004457.
 
-    :param pol_stats: Dictionary containing polymorphism stats needed to calculate delta_pi
+    :param S: Segregating sites
+    :param pi: nucleotide diversity
     :param n: Sample size
     :return: float
 
@@ -121,16 +116,16 @@ def sfs(ac, n):
 
 def pib(ac_1, ac_2, n1, n2):
     """Calculates the pi between (pib) populations 1 and 2 (aka Dxy) in a window
-    by calculating piB at each site where the reference allele frequency in pop1 is p1 
+    by calculating piB at each site where the alternate allele frequency in pop1 is p1
     and pop2 p2, using the equation p1*(1 - p2) + p2*(1 - p1)."""
     
-    if sum(rac_1) + sum(rac_2) == 0:
+    if sum(ac_1) + sum(ac_2) == 0:
         pi_b = 0.0
     else:        
         pi_b = 0.0
         for s in xrange(len(rac_1)):
-            p1 = rac_1[s] / float(n1)
-            p2 = rac_2[s] / float(n2)
+            p1 = ac_1[s] / float(n1)
+            p2 = ac_2[s] / float(n2)
             pi_b += p1 * (1 - p2) + p2 * (1 - p1)
                 
     return pi_b
