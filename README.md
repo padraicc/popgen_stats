@@ -3,5 +3,7 @@
 
 Requirements 
 	     
-* cyvcf
+* pysam
 * numpy
+
+

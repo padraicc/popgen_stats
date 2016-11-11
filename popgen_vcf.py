@@ -1,68 +1,26 @@
-from __future__ import print_function
+from __future__ import print_function, division
 import sys
 import argparse
-import cyvcf
+from pysam import
 import pgstats as pg
 import numpy as np
-import datetime
-
-
-def calc_rac(snp):
-    rac_num = (snp.num_hom_ref * 2) + snp.num_het
-
-    return rac_num
-
 
 
 parser = argparse.ArgumentParser(description="Program to calculate population genetic statistics from a region "
                                              "in VCF file")
 parser.add_argument('-i', '--vcf', required=True, dest='vcf_infile',
-                    help="VCF input file (Needs to be filtered in some way. SNPs without PASS in filter field will be"
-                         " excluded by default, but may be included if the -u flag is used (see below))")
+                    help="VCF input file (Needs to be filtered)")
 parser.add_argument('-o', '--out', required=True, dest='outfile', help="Outfile to write results")
-parser.add_argument('-d', '--min_mean_dp', required=False, dest='min_dp', type=int,
-                    help="Minimum mean depth across genotypes")
-parser.add_argument('-D', '--max_mean_dp', required=False, dest='max_dp', type=int,
-                    help="Maximum mean depth across genotypes")
-parser.add_argument('-L', '--chromosome_file', required=False, dest='chroms', type=str,
-                    help="File listing chromsomes to include.")
 
-# parser.add_argument('-u', '--unifiltered_sites', required=False, action='store_true', dest='unfiltered',
-#                     help="Option to include sites without a PASS in the filter field of the VCF (default; False)")
 # parser.add_argument('-x', '--pop_1', required=False, dest='pop1', help="Samples belonging to population 1")
 # parser.add_argument('-y', '--pop_2', required=False, dest='pop2', help="Samples belonging to population 2")
-# parser.add_argument('-r', '--region', required=False, dest='region', help="Region to calculate stats.
-#  Format is chromosome:start-end or file listing regions (or sites) (1-based coordinate system).
-#  If region is not given the stats will be calculated on the whole vcf file")
+# parser.add_argument('-b', '--bed', required=False, dest='region', help="Bed file specifying regions to calculate stats
+# (e.g., bedfile specifying introns")
 
 args = parser.parse_args()
 
-with open(args.chroms, 'r') as chrom_file:
-    chrom_list = [x.rstrip() for x in chrom_file]
+vcf_infile = Variant(vcf_infile)
 
-
-print("Analysing the following chromosomes")
-print(chrom_list)
-
-min_dp = 1
-if args.min_dp:
-    min_dp = args.min_dp
-
-max_dp = None
-if args.max_dp:
-    max_dp = args.max_dp
-
-vcf_infile = cyvcf.Reader(open(args.vcf_infile, 'r'))
-
-samples = vcf_infile.samples
-
-n_total = 2 * len(samples)  # assumes diploid genotypes.
-
-#pop1_index = []
-#pop2_index = []
-
-#n1 = len(pop1_index)
-#n2 = len(pop2_index)
 
 indels = 0
 extreme_depth = 0
