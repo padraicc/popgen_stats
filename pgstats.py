@@ -84,6 +84,8 @@ def TajimasD(n, s, tw, pi):
         V = e1 * s + e2 * s * (s - 1.)
 
         D = rawD / math.sqrt(V)
+
+        round(D, 5)
     
     return D
 
