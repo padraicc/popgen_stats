@@ -17,66 +17,46 @@ def get_feature_name(feature_rec):
 
     atts = feature_rec.split(';')
 
-    for i in atts:
-        if i.startswith('ID='):
-            feat_name = i.split('=')[1]
+    for f in atts:
+        if f.startswith('ID='):
+            feat_name = f.split('=')[1]
 
     return feat_name
 
 
-def count_callable(callable_file, start=None, end=None):
-    callable_f = FastaFile(callable_file)
+def count_callable(callable_file, chrom, start=None, end=None):
 
-    seq = callable_f.fetch(chrom, start, end)
+    callable_file = FastaFile(callable_file)
+
+    seq = callable_file.fetch(chrom, start, end)
     chrom_length = len(seq)
     callable_sites = seq.count('0')
-
-    return callable_sites
-
-
-def create_callable_dict(callable_fasta):
-    callable_dict ={}
-    with open(callable_fasta) as f:
-        for line in f:
-            if line.startswith('>'):
-                chrom_id = line.rstrip()[1:]
-                print('reading', chrom_id)
-                callable_dict[chrom_id] = ''
-            else:
-                callable_dict[chrom_id] += line.rstrip()
-
-    return callable_dict
-
-
-def calc_stats_chr(ac_list, chrom, callable_file, out):
-
-    callable_sites = count_callable(callable_file)
-
-    # callable_f = FastaFile(callable_file)
-    #
-    # seq = callable_f.fetch(reference=chrom)
-    # chrom_length = len(seq)
-    # callable_sites = seq.count('0')
-
-    segs = len(ac_list)
-    theta_w = pg.thetaW(n, segs)
-    theta_w_site = round(theta_w / callable_sites, 5)
-
-    pi = pg.pi_tajima(n, ac_list)
-    pi_site = round(pi / callable_sites, 5)
-
-    tajd = pg.TajimasD(n, segs, theta_w, pi)
-
-    if tajd is None:
-        tajd = 'NA'
-
-    print(chrom, chrom_length, callable_sites, segs, theta_w_site, pi_site, tajd, sep='\t', file=out)
 
     return chrom_length, callable_sites
 
 
-def calc_stats_region(chrom, feature_name, feature_type, ac_list, callable_sites, out):
+def calc_stats_chr(ac_list, chrom, callable_file, out):
 
+    callable_sites = count_callable(callable_file, chrom)
+
+    segs = len(ac_list)
+    theta_w = pg.thetaW(n, segs)
+    theta_w_site = round(theta_w / callable_sites[1], 5)
+
+    pi = pg.pi_tajima(n, ac_list)
+    pi_site = round(pi / callable_sites[1], 5)
+
+    tajd = pg.TajimasD(n, segs, theta_w, pi)
+
+    if tajd is None:
+        tajd = 'NA'
+
+    print(chrom, callable_sites[0], callable_sites[1], segs, theta_w_site, pi_site, tajd, sep='\t', file=out)
+
+    return callable_sites[0], callable_sites[1]
+
+
+def calc_stats_region(chrom, feature_id, feature_type, ac_list, callable_sites, out):
 
     segs = len(ac_list)
     theta_w = pg.thetaW(n, segs)
@@ -90,8 +70,7 @@ def calc_stats_region(chrom, feature_name, feature_type, ac_list, callable_sites
     if tajd is None:
         tajd = 'NA'
 
-    print(chrom, feature_name, feature_type, callable_sites, segs, theta_w_site, pi_site, tajd, sep='\t', file=out)
-
+    print(chrom, feature_id, feature_type, callable_sites, segs, theta_w_site, pi_site, tajd, sep='\t', file=out)
 
 
 parser = argparse.ArgumentParser(description="Program to calculate population genetic statistics from a region "
@@ -102,20 +81,22 @@ parser.add_argument('-o', '--out', required=True, dest='outfile', help="Outfile 
 parser.add_argument('-p', '--ploidy', required=True, type=int, dest='ploidy',
                     help="Ploidy of samples. 1 for haploid and 2 for diploid")
 parser.add_argument('-f', '--callable', required=True, dest='callable', help="Callable sites in a fasta format. "
-                                                                            "Callable is 0 and not-callable is 1")
+                                                                             "Callable is 0 and not-callable is 1")
 parser.add_argument('-e', '--exclude', required=False, dest='exclude', help="File listing chromosome/Scaffolds to "
                                                                             "exclude (Can not be use when -b specified")
 parser.add_argument('-b', '--bed', required=False, dest='bed', help="Bed file specifying regions to calculate stats"
-                                                                       "(e.g., bedfile specifying introns). Columns are "
-                                                                       "Chromosome\tstart\tend\tstrand\tfeature_name\t"
-                                                                       "feature_type. Can not be"
-                                                                       "used when -e is specified")
+                                                                    "(e.g., bedfile specifying introns). Columns are "
+                                                                    "Chromosome\tstart\tend\tstrand\tfeature_name\t"
+                                                                    "feature_type. Can not be "
+                                                                    "used when -e is specified")
 parser.add_argument('-t', '--type', required=True, dest='type', help="Name for the feauture given in the bed file "
                                                                      "specified by b. Needed for printing the output."
                                                                      "(e.g., -t intron in the case that the bed file "
                                                                      "gives the coordinates for introns")
 parser.add_argument('--min', required=False, dest='min_sites', help="Minimum number of sites for region to have stat"
-                                                                   "calculated")
+                                                                    "calculated")
+parser.add_argument('--weak_strong', required=False, dest='wwss', action='store_true',
+                    help="This flag will mean only weak-to-weak (A/T) or strong-to-strong (G/C) sites are used")
 # parser.add_argument('-x', '--pop_1', required=False, dest='pop1', help="Samples belonging to population 1")
 # parser.add_argument('-y', '--pop_2', required=False, dest='pop2', help="Samples belonging to population 2")
 
@@ -148,7 +129,6 @@ if args.exclude:
         contigs = set(vcf_infile.header.contigs)
 
         contigs = contigs.difference(set(exclude_chr))
-
 
     chrom_list = []
     total_ac = []
@@ -183,6 +163,10 @@ if args.bed:
     compressed = False
     bed_dict = {}
 
+    if args.wwss:
+        wwss_alleles = [('A', 'T'), ('T', 'A'), ('C', 'G'), ('G', 'C')]
+        non_wwss_poly = 0
+
     if args.bed[-3:] == '.gz':
         bed_file = gzip.open(args.bed, 'r')
     elif args.bed[-3:] == '.gz':
@@ -191,8 +175,6 @@ if args.bed:
         sys.exit("\nIs this a bed file? Is it compressed?\n")
 
     callable_f = FastaFile(args.callable)
-    # callable_site_dict = create_callable_dict(args.callable)
-    # print('Done')
 
     for rec in bed_file:
         col = rec.split()
@@ -207,25 +189,32 @@ if args.bed:
         bed_dict[feature_name].append((col[0], int(col[1]), int(col[2])))
 
     with open(args.outfile, 'w') as outfile:
-        print('Chromosome', 'Feature_name', 'Feature_type', 'Sites', 'S', 'thetaW', 'pi', 'tajd', sep='\t', file=outfile)
+        print('Chromosome', 'Feature_name', 'Feature_type', 'Sites', 'S', 'thetaW', 'pi', 'tajd', sep='\t',
+              file=outfile)
 
         for g in bed_dict:
-            # print(g, bed_dict[g])
-            sites= 0
+            sites = 0
             for r in bed_dict[g]:
-
-                sites += callable_f.fetch(r[0],r[1], r[2]).count('0')
-                # print(r[0],r[1], r[2], callable_f.fetch(r[0],r[1], r[2]))
-                # sites += callable_site_dict[r[0]][r[1]:r[2]].count('0')
+                sites += callable_f.fetch(r[0], r[1], r[2]).count('0')
                 vcf_chunk = vcf_infile.fetch(r[0], r[1], r[2])
                 for site in vcf_chunk:
-                    ac.append(site.info['AC'][0])
+                    if args.wwss:
+                        if site.alleles in wwss_alleles:
+                            # print(site.alleles)
+                            ac.append(site.info['AC'][0])
+                        else:
+                            non_wwss_poly += 1
+                    else:
+                        ac.append(site.info['AC'][0])
 
             if sites == 0 or site < int(args.min_sites):
-                print(g, sites, len(ac))
+                # print(g, sites, len(ac))
                 del ac[:]
                 continue
             else:
+                if args.wwss:
+                    sites = sites - non_wwss_poly
+                    non_wwss_poly = 0
 
                 calc_stats_region(r[0], g, args.type, ac, sites, outfile)
                 del ac[:]
