@@ -210,15 +210,18 @@ if args.bed:
                     else:
                         ac.append(site.info['AC'][0])
 
+            # print(sites, non_wwss_poly)
+            if args.wwss:
+                sites = sites - non_wwss_poly
+                non_wwss_poly = 0
+
+            # print(sites, non_wwss_poly)
+
             if sites == 0 or site < int(args.min_sites):
                 # print(g, sites, len(ac))
                 del ac[:]
                 continue
             else:
-                if args.wwss:
-                    sites = sites - non_wwss_poly
-                    non_wwss_poly = 0
-
                 calc_stats_region(r[0], g, args.type, ac, sites, outfile)
                 del ac[:]
 
