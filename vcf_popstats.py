@@ -104,7 +104,10 @@ parser.add_argument('--weak_strong', required=False, dest='wwss', action='store_
 args = parser.parse_args()
 
 if args.bed and args.exclude:
-    sys.exit('Can not use the -e and -b options together')
+    sys.exit('\nCan not use the -e and -b options together\n')
+
+if args.wwss and not args.bed:
+    sys.exit('\nNeed to specify a bed file of regions with -b option\n')
 
 if args.bed and not args.min_sites:
     sys.exit('\nThe --min option must be specified with -b option\n')
