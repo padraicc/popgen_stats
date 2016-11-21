@@ -1,4 +1,5 @@
 import math
+import numpy as np
 
 
 def thetaW(n, s):
@@ -19,7 +20,27 @@ def thetaW(n, s):
     return tw
 
 
-def pi_tajima(n, ac):
+# def pi_tajima(n, ac):
+#
+#     """Equation 11 and 12 from Tajima 1989
+#     Only consider biallelic sites
+#
+#     n: sample size
+#     ac: list of alternate allele count """
+#
+#     s = len(ac)
+#     if s == 0:
+#         pi = 0.0
+#     else:
+#         pi = 0.0
+#         for i in ac:
+#             p_squared = (i / float(n))**2
+#             q_squared = (1 - (i / float(n)))**2
+#             pi += (n * (1 - sum([p_squared, q_squared]))) / float(n - 1)
+#
+#     return pi
+
+def pi_tajima(n, af):
 
     """Equation 11 and 12 from Tajima 1989
     Only consider biallelic sites
@@ -27,16 +48,23 @@ def pi_tajima(n, ac):
     n: sample size
     ac: list of alternate allele count """
 
-    s = len(ac)
+    s = len(af)
     if s == 0:
         pi = 0.0
     else:
-        pi = 0.0
-        for i in ac:
-            p_squared = (i / float(n))**2
-            q_squared = (1 - (i / float(n)))**2
-            pi += (n * (1 - sum([p_squared, q_squared]))) / float(n - 1)
-                                 
+        # pi = 0.0
+        p_array = np.array(af)
+        p_squared = np.square(p_array)
+        one_array = np.ones(len(af))
+        # q_squared = np.array([(1 - (i / float(n)))**2 for i in ac])
+        q_squared = np.square((one_array - p_array))
+
+        hom_sum = p_squared + q_squared
+
+        n_array = np.repeat(n, len(af))
+
+        pi = np.sum((n_array * (one_array - hom_sum)) / (n_array - one_array))
+
     return pi
 
 
@@ -125,7 +153,7 @@ def pib(ac_1, ac_2, n1, n2):
         pi_b = 0.0
     else:        
         pi_b = 0.0
-        for s in xrange(len(rac_1)):
+        for s in range(len(rac_1)):
             p1 = ac_1[s] / float(n1)
             p2 = ac_2[s] / float(n2)
             pi_b += p1 * (1 - p2) + p2 * (1 - p1)
