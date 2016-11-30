@@ -68,27 +68,48 @@ def pi_tajima(n, af):
     return pi
 
 
+# def pi_sfs(sfs):
+#
+#     """Calculate pi using the folded sfs
+#
+#     sfs is a list containing the minor allele counts
+#     """
+#
+#     s = sum(sfs)
+#     n = len(sfs) * 2
+#     if s == 0:
+#         pi_total = 0.0
+#     else:
+#         pi = 0.0
+#         i = 1
+#         for Si in sfs:
+#             pi += Si * i * (n - i)
+#             i += 1
+#
+#     pi_total = (2 / float(n * (n - 1))) * pi
+#
+#     return pi_total
+
 def pi_sfs(sfs):
 
     """Calculate pi using the folded sfs
 
-    sfs is a list containing the minor allele counts
+    sfs is a numpy array containing the minor allele counts
     """
 
-    s = sum(sfs)
+    s = np.sum(sfs)
     n = len(sfs) * 2
     if s == 0:
-        pi_total = 0.0
-    else:
         pi = 0.0
-        i = 1
-        for Si in sfs:
-            pi += Si * i * (n - i)
-            i += 1
+    else:
+        # pi = 0.0
+        minor_counts = np.array(range(1, len(sfs) + 1))
+        n_array = np.repeat(n, len(sfs))
+        major_counts = n_array - minor_counts
 
-    pi_total = (2 / float(n * (n - 1))) * pi
+        pi = (2 / float(n * (n - 1))) * np.sum(sfs * minor_counts * major_counts)
 
-    return pi_total
+    return pi
 
 
 def TajimasD(n, s, tw, pi):
