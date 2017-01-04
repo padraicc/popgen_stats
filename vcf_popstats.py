@@ -162,7 +162,7 @@ if args.exclude:
 
     chrom_list = []
     total_af = []
-    total_ac = []
+    # total_ac = []
     total_sites = 0
     total_callable = 0
 
@@ -175,8 +175,8 @@ if args.exclude:
                 ac = site.info['AC'][0]
                 af.append(ac / float(n))
 
-            total_ac += ac
-            total_af += af
+            # total_ac += ac
+            total_af.append(af)
 
             sites = calc_stats_chr(args.pop_id, af, c, args.callable, outfile)
             total_sites += sites[0]
