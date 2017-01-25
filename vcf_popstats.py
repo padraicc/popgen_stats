@@ -176,8 +176,8 @@ if args.exclude:
                 allele_freq = ac / float(n)
                 af.append(allele_freq)
 
-            # total_ac += ac
-            total_af.append(allele_freq)
+                # total_ac += ac
+                total_af.append(allele_freq)
 
             sites = calc_stats_chr(args.pop_id, af, c, args.callable, outfile)
             total_sites += sites[0]
