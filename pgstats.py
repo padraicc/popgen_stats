@@ -4,9 +4,7 @@ import numpy as np
 
 def thetaW(n, s):
     """ Calculate's Waterson's 1975 estimator of theta 
-    Takes n the sample number and rac, a list of reference allele 
-    counts at each segregating site. For a fasta file one of the alleles
-    at a biallelic site is chosen as the ref
+    Takes n the sample number and s, the number of segregating site.
 
     n: sample size
     s: number of segregating sites"""
@@ -46,7 +44,7 @@ def pi_tajima(n, af):
     Only consider biallelic sites
 
     n: sample size
-    ac: list of alternate allele count """
+    af: list of alternate allele frequencies """
 
     s = len(af)
     if s == 0:
@@ -113,6 +111,14 @@ def pi_sfs(sfs):
 
 
 def TajimasD(n, s, tw, pi):
+
+    """Caluclate Tajima's D statistic (Tajima 1989)
+
+    n: sample size
+    s: number of segregating sites
+    tw: Waterson's theta
+    pi: nucleotide diversity
+    :return: float"""
     
     if s == 0:
         D = None
@@ -165,18 +171,18 @@ def sfs(ac, n):
     pass
 
 
-def pib(ac_1, ac_2, n1, n2):
+def pib(af_1, af_2, n1, n2):
     """Calculates the pi between (pib) populations 1 and 2 (aka Dxy) in a window
     by calculating piB at each site where the alternate allele frequency in pop1 is p1
     and pop2 p2, using the equation p1*(1 - p2) + p2*(1 - p1)."""
     
-    if sum(ac_1) + sum(ac_2) == 0:
+    if sum(af_1) + sum(af_2) == 0:
         pi_b = 0.0
     else:        
         pi_b = 0.0
-        for s in range(len(rac_1)):
-            p1 = ac_1[s] / float(n1)
-            p2 = ac_2[s] / float(n2)
+        for s in range(len(af_1)):
+            p1 = af_1[s]
+            p2 = af_2[s]
             pi_b += p1 * (1 - p2) + p2 * (1 - p1)
                 
     return pi_b
