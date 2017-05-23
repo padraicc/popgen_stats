@@ -94,15 +94,15 @@ def calc_stats_total(af_lst, callable_sites):
 
 parser = argparse.ArgumentParser(description="Program to calculate population genetic statistics from a region "
                                              "in VCF file")
-parser.add_argument('-i', '--vcf', required=True, dest='vcf_infile',
+parser.add_argument('-v', '--vcf', required=True, dest='vcf_infile',
                     help="VCF input file containing biallelic SNPs (Needs to be filtered)")
 parser.add_argument('-o', '--out', required=True, dest='outfile', help="Outfile to write results")
 parser.add_argument('-p', '--ploidy', required=True, type=int, dest='ploidy',
                     help="Ploidy of samples. 1 for haploid and 2 for diploid")
 parser.add_argument('-f', '--callable', required=True, dest='callable', help="Callable sites in a fasta format. "
                                                                              "Callable is 0 and not-callable is 1")
-parser.add_argument('-e', '--exclude', required=False, dest='exclude', help="File listing chromosome/Scaffolds to "
-                                                                            "exclude (Can not be use when -b specified")
+parser.add_argument('-i', '--include', required=False, dest='include', help="File listing chromosome/Scaffolds to "
+                                                                            "include (Can not be use when -b specified")
 parser.add_argument('-b', '--bed', required=False, dest='bed', help="Bed file specifying regions to calculate stats"
                                                                     "(e.g., bedfile specifying introns). Columns are "
                                                                     "Chromosome\tstart\tend\tstrand\tfeature_name\t"
@@ -121,13 +121,14 @@ parser.add_argument('--weak_strong', required=False, dest='wwss', action='store_
 parser.add_argument('--sfs', required=False, dest='sfs', help="Compute the folded sfs")
 parser.add_argument('--summed_sfs', required=False, dest='sum_sfs', help="Compute the polystats summed accross regions "
                                                                          "in bed")
-# parser.add_argument('-x', '--pop_1', required=False, dest='pop1', help="Samples belonging to population 1")
+parser.add_argument('-x', '--pop_1', required=False, dest='pop1', help="Samples belonging to population 1 listed in a "
+                                                                       "text file (one sample per line")
 # parser.add_argument('-y', '--pop_2', required=False, dest='pop2', help="Samples belonging to population 2")
 
 
 args = parser.parse_args()
 
-if args.bed and args.exclude:
+if args.bed and args.include:
     sys.exit('\nCan not use the -e and -b options together\n')
 
 if args.wwss and not args.bed:
@@ -150,15 +151,33 @@ else:
 if args.sfs:
     sfs = np.zeros((n // 2) + 1, dtype=int)
 
-if args.exclude:
+if args.pop1:
+    with open(args.pop1) as pop_file:
+        pop_samples = [i.rstrip() for i in pop_file]
+
+    vcf_samples = list(vcf_infile.header.samples)
+
+    sample_indices = []
+
+    try:
+        for s in pop_samples: # find the index for the samples specified by -x
+            sample_indices.append(vcf_samples.index(s))
+    except ValueError:
+        sys.exit('Sample %s not found in the VCF file' % sys.argv[2])
+
+    sample_num = len(sample_indices)
+
+    if args.ploidy == 2:
+        n = 2 * sample_num
+    elif args.ploidy == 1:
+        n = sample_num
+
+if args.include:
 
     af = []
     ac = []
-    with open(args.exclude, 'r') as exclude_file:
-        exclude_chr = set([i.rstrip() for i in exclude_file])
-
-        contigs = set(vcf_infile.header.contigs)
-        contigs = contigs.difference(set(exclude_chr))
+    with open(args.include, 'r') as include_file:
+        contigs = [i.rstrip() for i in include_file]
 
     chrom_list = []
     total_af = []
@@ -172,12 +191,31 @@ if args.exclude:
 
         for c in contigs:
             for site in vcf_infile.fetch(c):
-                ac = site.info['AC'][0]
-                allele_freq = ac / float(n)
-                af.append(allele_freq)
+                if args.pop1:
+                    gts = []
+                    for index in sample_indices:
+                        gt = site.samples.values()[index].get('GT')
+                        if len(gt) > 1:
+                            gts.append(gt[0])
+                            gts.append(gt[1])
+                        elif len(gt) == 1:
+                            gts.append(gt[0])
+                        else:
+                            sys.exit('This script only considers  haploid or diploid genotypes')
 
-                # total_ac += ac
-                total_af.append(allele_freq)
+                        ac = sum(gts)  # Get the AC for a subset of samples
+                else:
+                    ac = site.info['AC'][0]  # If using all samples  use the AC info field of the VCF
+
+                # print(site.chrom, site.pos, ac, gts)
+
+                allele_freq = ac / float(n)
+
+                if 0.0 < allele_freq < 1.0:
+                    af.append(allele_freq)
+
+                    # total_ac += ac
+                    total_af.append(allele_freq)
 
             sites = calc_stats_chr(args.pop_id, af, c, args.callable, outfile)
             total_sites += sites[0]
@@ -185,11 +223,11 @@ if args.exclude:
 
             del af[:]
 
-        if args.sfs:
-            for c in total_ac:
-                sfs[min(n - c, c)] += 1
-
-            sfs[0] += (total_callable - len(total_ac))
+        # if args.sfs:
+        #     for c in total_ac:
+        #         sfs[min(n - c, c)] += 1
+        #
+        #     sfs[0] += (total_callable - len(total_ac))
 
         S = len(total_af)
         thetaw = pg.thetaW(n, S)
@@ -224,10 +262,13 @@ if args.bed:
 
     for rec in bed_file:
         col = rec.split()
-        if ';' in col[4]:
-            feature_name = get_feature_name(col[4])
-        else:
-            feature_name = col[4]
+        try:
+            if ';' in col[4]:
+                feature_name = get_feature_name(col[4])
+            else:
+                feature_name = col[4]
+        except IndexError:
+            sys.exit("Feature name required in column 5 of the bed file")
 
         if feature_name not in bed_dict:
             bed_dict[feature_name] = []
@@ -248,14 +289,52 @@ if args.bed:
                 for site in vcf_chunk:
                     if args.wwss:
                         if site.alleles in wwss_alleles:
+                            if args.pop1:
+                                gts = []
+                                for index in sample_indices:
+                                    gt = site.samples.values()[index].get('GT')
+                                    if len(gt) > 1:
+                                        gts.append(gt[0])
+                                        gts.append(gt[1])
+                                    elif len(gt) == 1:
+                                        gts.append(gt[0])
+                                    else:
+                                        sys.exit('This script only considers  haploid or diploid genotypes')
+
+                                ac = sum(gts)  # Get the AC for a subset of samples
+
+                            else:
+                                ac = site.info['AC'][0]  # If using all samples  use the AC info field of the VCF
+
+                            allele_freq = ac / float(n)
+
                             ac = site.info['AC'][0]
                             ac_dict[g].append(site.info['AC'][0])
-                            af_dict[g].append(ac / float(n))
+                            af_dict[g].append(allele_freq)
 
                     else:
-                        ac = site.info['AC'][0]
-                        ac_dict[g].append(ac)
-                        af_dict[g].append(ac / float(n))
+                        if args.pop1:
+                            gts = []
+                            for index in sample_indices:
+                                gt = site.samples.values()[index].get('GT')
+                                if len(gt) > 1:
+                                    gts.append(gt[0])
+                                    gts.append(gt[1])
+                                elif len(gt) == 1:
+                                    gts.append(gt[0])
+                                else:
+                                    sys.exit('This script only considers  haploid or diploid genotypes')
+
+                            ac = sum(gts)  # Get the AC for a subset of samples
+
+                        else:
+                            ac = site.info['AC'][0]
+
+                        allele_freq = ac / float(n)
+                        if 0.0 < allele_freq < 1.0:
+                            ac_dict[g].append(ac)
+                            af_dict[g].append(allele_freq )
+
 
             af_list.append(af_dict[g])
             sites_list.append(sites_dict[g])
@@ -338,3 +417,5 @@ if args.sum_sfs:
         print(args.pop_id, args.type, site_type, gene_count, total_sites, total_S, total_pi, pi_lower, pi_upper,
               total_thetaW, thetaw_lower, thetaw_upper, total_tajd, tajd_lower, tajd_upper, sep='\t',
               file=total_outfile)
+
+
